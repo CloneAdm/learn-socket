@@ -1,6 +1,8 @@
 import time
 import socket
 
+port = 6633
+
 
 def send_answer(conn, status="200 OK", typ="text/plain; charset=utf-8", data=""):
     data = data.encode("utf-8")
@@ -27,30 +29,28 @@ def parse(conn, addr):  # обработка соединения в отдел�
         return  # не обрабатываем
 
     udata = data.decode("utf-8")
-
-    # берём только первую строку
-    udata = udata.split("\r\n", 1)[0]
-    # разбиваем по пробелам нашу строку
-    method, address, protocol = udata.split(" ", 2)
+    udata = udata.split("\r\n", 1)[0]  # берём только первую строку - там главное. Далее заголовки, сейчас не нужны
+    method, address, protocol = udata.split(" ", 2)  # разбиваем по пробелам нашу строку
 
     if method != "GET" or address != "/time.html":
         send_answer(conn, status="404 Not Found", data="Не найдено")
         return
 
-    answer = """<!DOCTYPE html>"""
-    answer += """<html><head><title>Время</title></head><body><h1>"""
-    answer += time.strftime("%H:%M:%S %d.%m.%Y")
-    answer += """</h1></body></html>"""
+    answer = f"""\
+    <!DOCTYPE html>
+    <html><head><title>Время</title></head><body><h1>
+    {time.strftime("%H:%M:%S %d.%m.%Y")}
+    </h1></body></html>"""
 
     send_answer(conn, typ="text/html; charset=utf-8", data=answer)
 
 
 sock = socket.socket()
-sock.bind(("", 6633))
+sock.bind(("", port))
 sock.listen(5)
 
 try:
-    while 1:  # работаем постоянно
+    while True:  # работаем постоянно
         conn, addr = sock.accept()
         print("New connection from " + addr[0])
         try:
@@ -63,5 +63,5 @@ try:
             conn.close()
 finally:
     sock.close()
-# так при возникновении любой ошибки сокет
-# всегда закроется корректно и будет всё хорошо
+    # так при возникновении любой ошибки сокет
+    # всегда закроется корректно и будет всё хорошо
